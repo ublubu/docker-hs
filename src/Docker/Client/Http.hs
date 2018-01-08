@@ -57,7 +57,7 @@ data DockerError = DockerConnectionError NHS.HttpException
                  | DockerClientError Text
                  | DockerClientDecodeError Text -- ^ Could not parse the response from the Docker endpoint.
                  | DockerInvalidStatusCode HTTP.Status -- ^ Invalid exit code received from Docker endpoint.
-                 | GenericDockerError Text deriving (Show, Typeable)
+                 | GenericDockerError NHS.HttpException deriving (Show, Typeable)
 
 newtype DockerT m a = DockerT {
         unDockerT :: Monad m => ReaderT (DockerClientOpts, HttpHandler m) m a
@@ -120,7 +120,7 @@ httpHandler manager = HttpHandler $ \request' sink -> do -- runResourceT ..
         Left e@HTTP.FailedConnectionException{}  -> return $ Left $ DockerConnectionError e
         Left e@HTTP.FailedConnectionException2{} -> return $ Left $ DockerConnectionError e
 #endif
-        Left e                                 -> return $ Left $ GenericDockerError (T.pack $ show e)
+        Left e                                 -> return $ Left $ GenericDockerError e
 
 -- | Connect to a unix domain socket (the default docker socket is
 --   at \/var\/run\/docker.sock)
