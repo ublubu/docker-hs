@@ -74,6 +74,9 @@ getEndpoint v (CreateImageEndpoint name tag _) = encodeURLWithQuery [v, "images"
         where query = [("fromImage", Just n), ("tag", Just t)]
               n = encodeQ $ T.unpack name
               t = encodeQ $ T.unpack tag
+getEndpoint v (PushImageEndpoint name tag) = encodeURLWithQuery [v, "images", name, "push"] query
+        where query = [("tag", t)]
+              t = encodeQ . T.unpack <$> tag
 
 getEndpointRequestBody :: Endpoint -> Maybe HTTP.RequestBody
 getEndpointRequestBody VersionEndpoint = Nothing
@@ -93,6 +96,7 @@ getEndpointRequestBody (InspectContainerEndpoint _) = Nothing
 
 getEndpointRequestBody (BuildImageEndpoint _ fp) = Just $ requestBodySourceChunked $ CB.sourceFile fp
 getEndpointRequestBody (CreateImageEndpoint _ _ _) = Nothing
+getEndpointRequestBody (PushImageEndpoint _ _) = Nothing
 
 getEndpointContentType :: Endpoint -> BSC.ByteString
 getEndpointContentType (BuildImageEndpoint _ _) = BSC.pack "application/tar"

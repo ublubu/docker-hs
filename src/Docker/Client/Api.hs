@@ -20,6 +20,7 @@ module Docker.Client.Api (
     , listImages
     , buildImageFromDockerfile
     , pullImage
+    , pushImage
     -- * Other
     , getDockerVersion
     ) where
@@ -62,6 +63,7 @@ requestHelper' verb endpoint sink = do
                 let status = responseStatus response in
                 case statusCodeToError endpoint status of
                     Just err ->
+                        -- TODO(ublubu): If it's an error, package up the response body with the error.
                         return $ Left err
                     Nothing ->
                         fmap Right sink
@@ -206,4 +208,7 @@ buildImageFromDockerfile opts base = do
 -- the image from a tarball or a URL.
 pullImage :: forall m b . (MonadIO m, MonadMask m) => T.Text -> Tag -> Sink BS.ByteString m b -> DockerT m (Either DockerError b)
 pullImage name tag = requestHelper' POST (CreateImageEndpoint name tag Nothing)
+
+pushImage :: forall m b . (MonadIO m, MonadMask m) => T.Text -> Maybe Tag -> Sink BS.ByteString m b -> DockerT m (Either DockerError b)
+pushImage name tag = requestHelper' POST (PushImageEndpoint name tag)
 
