@@ -89,10 +89,12 @@ module Docker.Client.Types (
     , addVolumeFrom
     , MemoryConstraint(..)
     , MemoryConstraintSize(..)
+    , XRegistryAuthCredentials(..)
     ) where
 
 import           Data.Aeson          (FromJSON, ToJSON, genericParseJSON,
-                                      genericToJSON, object, parseJSON, toJSON,
+                                      genericToEncoding, genericToJSON, object,
+                                      parseJSON, toJSON,
                                       (.!=), (.:), (.:?), (.=))
 import qualified Data.Aeson          as JSON
 import           Data.Aeson.Types    (defaultOptions, fieldLabelModifier)
@@ -127,7 +129,7 @@ data Endpoint =
       | InspectContainerEndpoint ContainerID
       | BuildImageEndpoint BuildOpts FilePath
       | CreateImageEndpoint T.Text Tag (Maybe T.Text) -- ^ Either pull an image from docker hub or imports an image from a tarball (or URL)
-      | PushImageEndpoint T.Text (Maybe Tag) -- ^ args are: name, tag
+      | PushImageEndpoint XRegistryAuthCredentials T.Text (Maybe Tag) -- ^ args are: name, tag
     deriving (Eq, Show)
 
 -- | We should newtype this
@@ -1460,6 +1462,22 @@ instance FromJSON ContainerConfig where
         return $ ContainerConfig hostname domainname user attachStdin attachStdout attachStderr exposedPorts tty openStdin stdinOnce env cmd image volumes workingDir entrypoint networkDisabled
             macAddress labels stopSignal
     parseJSON _ = fail "NetworkSettings is not an object."
+
+-- TODO: Add 'XRegistryAuthToken'. Add optional credentials field "email".
+data XRegistryAuthCredentials = XRegistryAuthCredentials
+  { _xracUsername :: Text
+  , _xracPassword :: Text
+  } deriving (Eq, Show, Generic)
+
+xracOptions :: JSON.Options
+xracOptions = defaultOptions { fieldLabelModifier = drop 5 }
+
+instance ToJSON XRegistryAuthCredentials where
+  toJSON = genericToJSON xracOptions
+  toEncoding = genericToEncoding xracOptions
+
+instance FromJSON XRegistryAuthCredentials where
+  parseJSON = genericParseJSON xracOptions
 
 parseIntegerText :: (Monad m) => Text -> m Integer
 parseIntegerText t = case readMaybe $ T.unpack t of

@@ -209,6 +209,11 @@ buildImageFromDockerfile opts base = do
 pullImage :: forall m b . (MonadIO m, MonadMask m) => T.Text -> Tag -> Sink BS.ByteString m b -> DockerT m (Either DockerError b)
 pullImage name tag = requestHelper' POST (CreateImageEndpoint name tag Nothing)
 
-pushImage :: forall m b . (MonadIO m, MonadMask m) => T.Text -> Maybe Tag -> Sink BS.ByteString m b -> DockerT m (Either DockerError b)
-pushImage name tag = requestHelper' POST (PushImageEndpoint name tag)
+pushImage :: forall m b . (MonadIO m, MonadMask m)
+          => XRegistryAuthCredentials
+          -> T.Text -- ^ image name
+          -> Maybe Tag -- ^ image tag
+          -> Sink BS.ByteString m b -- ^ consume the response body
+          -> DockerT m (Either DockerError b)
+pushImage auth name tag = requestHelper' POST (PushImageEndpoint auth name tag)
 

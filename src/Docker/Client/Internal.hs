@@ -1,15 +1,20 @@
+{-# LANGUAGE OverloadedStrings#-}
+
 module Docker.Client.Internal where
 
 import           Blaze.ByteString.Builder (toByteString)
 import qualified Data.Aeson               as JSON
+import           Data.Aeson               (ToJSON)
 import           Data.ByteString          (ByteString)
+import           Data.ByteString.Lazy     (toStrict)
+import qualified Data.ByteString.Base64   as Base64
 import qualified Data.ByteString.Char8    as BSC
 import qualified Data.Conduit.Binary      as CB
 import           Data.Text                as T
 import           Data.Text.Encoding       (decodeUtf8, encodeUtf8)
 import qualified Network.HTTP.Client      as HTTP
 import           Network.HTTP.Conduit     (requestBodySourceChunked)
-import           Network.HTTP.Types       (Query, encodePath,
+import           Network.HTTP.Types       (Header, Query, encodePath,
                                            encodePathSegments)
 
 import           Docker.Client.Types
@@ -74,7 +79,7 @@ getEndpoint v (CreateImageEndpoint name tag _) = encodeURLWithQuery [v, "images"
         where query = [("fromImage", Just n), ("tag", Just t)]
               n = encodeQ $ T.unpack name
               t = encodeQ $ T.unpack tag
-getEndpoint v (PushImageEndpoint name tag) = encodeURLWithQuery [v, "images", name, "push"] query
+getEndpoint v (PushImageEndpoint _ name tag) = encodeURLWithQuery [v, "images", name, "push"] query
         where query = [("tag", t)]
               t = encodeQ . T.unpack <$> tag
 
@@ -96,9 +101,17 @@ getEndpointRequestBody (InspectContainerEndpoint _) = Nothing
 
 getEndpointRequestBody (BuildImageEndpoint _ fp) = Just $ requestBodySourceChunked $ CB.sourceFile fp
 getEndpointRequestBody (CreateImageEndpoint _ _ _) = Nothing
-getEndpointRequestBody (PushImageEndpoint _ _) = Nothing
+getEndpointRequestBody (PushImageEndpoint _ _ _) = Nothing
 
 getEndpointContentType :: Endpoint -> BSC.ByteString
 getEndpointContentType (BuildImageEndpoint _ _) = BSC.pack "application/tar"
 getEndpointContentType _ = BSC.pack "application/json; charset=utf-8"
+
+getEndpointHeaders :: Endpoint -> [Header]
+getEndpointHeaders (PushImageEndpoint auth _ _) =
+  pure ("X-Registry-Auth", toBase64JSON auth)
+getEndpointHeaders _ = []
+
+toBase64JSON :: (ToJSON a) => a -> ByteString
+toBase64JSON = Base64.encode . toStrict . JSON.encode
 

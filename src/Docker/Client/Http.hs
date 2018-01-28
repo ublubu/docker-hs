@@ -43,7 +43,8 @@ import qualified Network.Socket.ByteString    as SBS
 
 import           Docker.Client.Internal       (getEndpoint,
                                                getEndpointContentType,
-                                               getEndpointRequestBody)
+                                               getEndpointRequestBody,
+                                               getEndpointHeaders)
 import           Docker.Client.Types          (DockerClientOpts, Endpoint (..),
                                                apiVer, baseUrl)
 
@@ -98,7 +99,7 @@ mkHttpRequest verb e opts = request
               request' = case  initialR of
                             Just ir ->
                                 return $ ir {method = (encodeUtf8 . T.pack $ show verb),
-                                              requestHeaders = [("Content-Type", (getEndpointContentType e))]}
+                                              requestHeaders = ("Content-Type", (getEndpointContentType e)):getEndpointHeaders e}
                             Nothing -> Nothing
               request = (\r -> maybe r (\body -> r {requestBody = body,  -- This will either be a HTTP.RequestBodyLBS  or HTTP.RequestBodySourceChunked for the build endpoint
                                                     requestHeaders = [("Content-Type", "application/json; charset=utf-8")]}) $ getEndpointRequestBody e) <$> request'
@@ -258,7 +259,7 @@ statusCodeToError (CreateImageEndpoint _ _ _) st =
         Nothing
     else
         Just $ DockerInvalidStatusCode st
-statusCodeToError (PushImageEndpoint _ _) st =
+statusCodeToError (PushImageEndpoint _ _ _) st =
     if st == status200 then
         Nothing
     else
