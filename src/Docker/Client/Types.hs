@@ -129,7 +129,8 @@ data Endpoint =
       | InspectContainerEndpoint ContainerID
       | BuildImageEndpoint BuildOpts FilePath
       | CreateImageEndpoint T.Text Tag (Maybe T.Text) -- ^ Either pull an image from docker hub or imports an image from a tarball (or URL)
-      | PushImageEndpoint XRegistryAuthCredentials T.Text (Maybe Tag) -- ^ args are: name, tag
+      | PullImageEndpoint XRegistryAuthCredentials T.Text Tag -- ^ args are: auth, name, tag
+      | PushImageEndpoint XRegistryAuthCredentials T.Text (Maybe Tag) -- ^ args are: auth, name, tag
     deriving (Eq, Show)
 
 -- | We should newtype this

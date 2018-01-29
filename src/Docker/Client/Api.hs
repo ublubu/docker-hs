@@ -20,6 +20,7 @@ module Docker.Client.Api (
     , listImages
     , buildImageFromDockerfile
     , pullImage
+    , pullPrivateImage
     , pushImage
     -- * Other
     , getDockerVersion
@@ -208,6 +209,14 @@ buildImageFromDockerfile opts base = do
 -- the image from a tarball or a URL.
 pullImage :: forall m b . (MonadIO m, MonadMask m) => T.Text -> Tag -> Sink BS.ByteString m b -> DockerT m (Either DockerError b)
 pullImage name tag = requestHelper' POST (CreateImageEndpoint name tag Nothing)
+
+pullPrivateImage :: forall m b . (MonadIO m, MonadMask m)
+                 => XRegistryAuthCredentials
+                 -> T.Text -- ^ image name
+                 -> Tag -- ^ image tag
+                 -> Sink BS.ByteString m b -- ^ consume the response body
+                 -> DockerT m (Either DockerError b)
+pullPrivateImage auth name tag = requestHelper' POST (PullImageEndpoint auth name tag)
 
 pushImage :: forall m b . (MonadIO m, MonadMask m)
           => XRegistryAuthCredentials

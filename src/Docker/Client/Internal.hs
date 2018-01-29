@@ -79,6 +79,7 @@ getEndpoint v (CreateImageEndpoint name tag _) = encodeURLWithQuery [v, "images"
         where query = [("fromImage", Just n), ("tag", Just t)]
               n = encodeQ $ T.unpack name
               t = encodeQ $ T.unpack tag
+getEndpoint v (PullImageEndpoint _ name tag) = getEndpoint v $ CreateImageEndpoint name tag Nothing
 getEndpoint v (PushImageEndpoint _ name tag) = encodeURLWithQuery [v, "images", name, "push"] query
         where query = [("tag", t)]
               t = encodeQ . T.unpack <$> tag
@@ -101,6 +102,7 @@ getEndpointRequestBody (InspectContainerEndpoint _) = Nothing
 
 getEndpointRequestBody (BuildImageEndpoint _ fp) = Just $ requestBodySourceChunked $ CB.sourceFile fp
 getEndpointRequestBody (CreateImageEndpoint _ _ _) = Nothing
+getEndpointRequestBody (PullImageEndpoint _ _ _) = Nothing
 getEndpointRequestBody (PushImageEndpoint _ _ _) = Nothing
 
 getEndpointContentType :: Endpoint -> BSC.ByteString
@@ -109,6 +111,8 @@ getEndpointContentType _ = BSC.pack "application/json; charset=utf-8"
 
 getEndpointHeaders :: Endpoint -> [Header]
 getEndpointHeaders (PushImageEndpoint auth _ _) =
+  pure ("X-Registry-Auth", toBase64JSON auth)
+getEndpointHeaders (PullImageEndpoint auth _ _) =
   pure ("X-Registry-Auth", toBase64JSON auth)
 getEndpointHeaders _ = []
 
