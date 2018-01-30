@@ -1352,7 +1352,7 @@ instance FromJSON EnvVar where
     parseJSON _ = fail "EnvVar is not a string"
 
 instance ToJSON EnvVar where
-    toJSON (EnvVar n v) = object [n .= v]
+    toJSON (EnvVar n v) = JSON.String $ n <> "=" <> v
 
 -- | ExposedPort represents a port (and it's type)
 -- that a container should expose to other containers or the host system.
